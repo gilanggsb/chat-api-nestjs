@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model users {
+  id           Int            @id @default(autoincrement())
+  name         String
+  email        String         @unique
+  avatar       String?
+  password     String         @db.Text
+  phone        String?        @db.Text
+  status       String         @default("Hello Everyone!")
+  created_at   DateTime       @default(now())
+  deleted_at   DateTime?
+  contacts     contacts[]     @relation("user")
+  friends      contacts[]     @relation("friend")
+  rooms        rooms[]
+  participants participants[]
+  chats        chats[]
+  messages     messages[]
+}
+
+model contacts {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  user       users?    @relation("user", references: [id], fields: [user_id])
+  friend_id  Int
+  friend     users?    @relation("friend", references: [id], fields: [friend_id])
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  @@index([friend_id])
+  @@index([user_id])
+}
+
+model participants {
+  id         Int       @id @default(autoincrement())
+  room_id    Int
+  user_id    Int
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+  room       rooms?    @relation(references: [id], fields: [room_id])
+  user       users?    @relation(references: [id], fields: [user_id])
+
+  @@index([user_id])
+  @@index([room_id])
+}
+
+model rooms {
+  id           Int            @id @default(autoincrement())
+  admin_id     Int
+  name         String
+  type         String         @default("group")
+  last_message String         @default("")
+  created_at   DateTime       @default(now())
+  deleted_at   DateTime?
+  admin        users?         @relation(references: [id], fields: [admin_id])
+  participants participants[]
+  chats        chats[]
+  messages     messages[]
+
+  @@index([admin_id])
+}
+
+model chats {
+  id         Int       @id @default(autoincrement())
+  room_id    Int
+  user_id    Int
+  message    String
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+  room       rooms?    @relation(references: [id], fields: [room_id])
+  user       users?    @relation(references: [id], fields: [user_id])
+
+  @@index([room_id])
+  @@index([user_id])
+}
+
+model messages {
+  id         Int       @id @default(autoincrement())
+  message    String
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  room_id Int?
+  user_id Int?
+  user    users? @relation(fields: [user_id], references: [id])
+  rooms   rooms? @relation(fields: [room_id], references: [id])
+
+  @@index([user_id])
+  @@index([room_id])
+}
