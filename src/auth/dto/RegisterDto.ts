@@ -41,4 +41,9 @@ export class RegisterDto {
   @MaxLength(12)
   @IsPhoneNumber('ID')
   phone: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  status: string;
 }

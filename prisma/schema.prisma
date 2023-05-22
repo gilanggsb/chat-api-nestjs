@@ -56,19 +56,38 @@ model participants {
 }
 
 model rooms {
-  id           Int            @id @default(autoincrement())
-  admin_id     Int
-  name         String
-  type         String         @default("group")
-  last_message String         @default("")
-  created_at   DateTime       @default(now())
-  deleted_at   DateTime?
-  admin        users?         @relation(references: [id], fields: [admin_id])
-  participants participants[]
-  chats        chats[]
-  messages     messages[]
+  id              Int            @id @default(autoincrement())
+  admin_id        Int
+  name            String
+  type            String         @default("private")
+  avatar          String?
+  created_at      DateTime       @default(now())
+  deleted_at      DateTime?
+  admin           users?         @relation(references: [id], fields: [admin_id])
+  last_message_id Int?           @unique
+  last_message    messages?      @relation("last_messages", fields: [last_message_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  participants    participants[]
+  chats           chats[]
+  messages        messages[]     @relation("rooms")
 
   @@index([admin_id])
+  @@index([last_message_id])
+}
+
+model messages {
+  id         Int       @id @default(autoincrement())
+  message    String
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  room_id      Int?
+  user_id      Int?
+  user         users? @relation(fields: [user_id], references: [id])
+  rooms        rooms? @relation(name: "rooms", fields: [room_id], references: [id])
+  last_room    rooms? @relation("last_messages")
+
+  @@index([user_id])
+  @@index([room_id])
 }
 
 model chats {
@@ -83,19 +102,4 @@ model chats {
 
   @@index([room_id])
   @@index([user_id])
-}
-
-model messages {
-  id         Int       @id @default(autoincrement())
-  message    String
-  created_at DateTime  @default(now())
-  deleted_at DateTime?
-
-  room_id Int?
-  user_id Int?
-  user    users? @relation(fields: [user_id], references: [id])
-  rooms   rooms? @relation(fields: [room_id], references: [id])
-
-  @@index([user_id])
-  @@index([room_id])
 }

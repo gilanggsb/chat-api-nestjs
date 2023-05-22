@@ -13,4 +13,8 @@ export class CreateRoomDto {
   @IsNotEmpty()
   @IsString()
   type: string;
+
+  @ApiProperty()
+  @IsString()
+  avatar?: string;
 }

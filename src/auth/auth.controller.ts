@@ -55,6 +55,7 @@ export class AuthController {
       },
     },
   })
+  @UseGuards(AuthGuard)
   @UseInterceptors(
     FileInterceptor('avatar', HelpersService.avatarMulterOptions),
   )

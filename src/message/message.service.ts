@@ -4,12 +4,14 @@ import { UpdateMessageDto } from './dto/update-message.dto';
 import { REQUEST } from '@nestjs/core';
 import { HelpersService } from 'src/helpers/helpers.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RoomService } from 'src/room/room.service';
 
 @Injectable()
 export class MessageService {
   constructor(
     private prisma: PrismaService,
     private helpers: HelpersService,
+    private roomService: RoomService,
     @Inject(REQUEST) private req: any,
   ) {}
   async sendMessage(sendMessageDto: SendMessageDto) {
@@ -31,9 +33,14 @@ export class MessageService {
         );
       }
       const chats = await this.prisma.messages.create({
-        data: sendMessageDto,
+        data: {
+          message: sendMessageDto.message,
+          user_id: this.req.user.id,
+          room_id: sendMessageDto.room_id,
+        },
       });
-      return this.helpers.generateResponse('Success create room', chats);
+      await this.roomService.updateLastMessage(chats.room_id, chats.id);
+      return this.helpers.generateResponse('Success send message', chats);
     } catch (error) {
       return this.helpers.catchError(error);
     }
@@ -44,6 +51,11 @@ export class MessageService {
       const chats = await this.prisma.messages.findMany({
         where: {
           room_id: room_id,
+        },
+        include: {
+          user: {
+            select: this.prisma.excludeUser(),
+          },
         },
       });
       return this.helpers.generateResponse('Success get chats', chats);
@@ -81,12 +93,17 @@ export class MessageService {
 
   async removeMessage(id: number) {
     try {
-      const chats = await this.prisma.messages.delete({
+      const chat = await this.prisma.messages.findFirst({ where: { id: id } });
+      await this.roomService.updateLastMessage(chat.room_id, null);
+      const deletedChat = await this.prisma.messages.delete({
         where: {
           id: id,
         },
       });
-      return this.helpers.generateResponse('Success remove message', chats);
+      return this.helpers.generateResponse(
+        'Success remove message',
+        deletedChat,
+      );
     } catch (error) {
       return this.helpers.catchError(error);
     }
